@@ -10,9 +10,11 @@ import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineListener;
 import com.mapbox.android.core.location.LocationEnginePriority;
@@ -20,6 +22,8 @@ import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.camera.CameraUpdate;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.constants.Style;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -30,6 +34,7 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 
+
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener {
@@ -38,7 +43,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private PermissionsManager permissionsManager;
     private LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
+    private LocationEngine locationEngineProvider;
     private Location pos;
+
 
     private ImageButton navButton;
     private ImageButton formButton;
@@ -46,6 +53,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LinearLayout popUp;
     private Button submit;
     private Button photo;
+    private EditText promoC;
+    private EditText offreC;
+    private EditText timeC;
+
 
 
     @Override
@@ -60,6 +71,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         popUp = findViewById(R.id.popUp);
         submit = findViewById(R.id.submit);
         photo = findViewById(R.id.photo);
+        promoC = findViewById(R.id.promoC);
+        offreC = findViewById(R.id.offreC);
+        timeC = findViewById(R.id.timeC);
+
+
 
         navButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,17 +94,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         submit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                new Marker(promoC.getText().toString(), offreC.getText().toString(), Integer.parseInt(timeC.getText().toString()));
+                promoC.setText("");
+                offreC.setText("");
+                timeC.setText("");
                 popUp.setVisibility(View.INVISIBLE);
             }
         });
         mapView.onCreate(savedInstanceState);
-
         mapView.getMapAsync(this);
     }
 
     @Override
     public void onMapReady(MapboxMap mapboxMap) {
         map = mapboxMap;
+        mapboxMap.setStyleUrl("mapbox://styles/yato97/ckwoy24741k0y15r0e1t9jdfq");
         enableLocation();
     }
 
@@ -104,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @SuppressLint("MissingPermission")
     private void initLocation() {
+        locationEngineProvider = new LocationEngineProvider(this).obtainBestLocationEngineAvailable();
         locationEngine = new LocationEngineProvider(this).obtainBestLocationEngineAvailable();
         locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
         locationEngine.activate();
@@ -120,12 +141,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void initLayer() {
         locationLayerPlugin = new LocationLayerPlugin(mapView, map, locationEngine);
         locationLayerPlugin.setLocationLayerEnabled(true);
-        locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
-        locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
+        locationLayerPlugin.setCameraMode(CameraMode.TRACKING_COMPASS);
+        locationLayerPlugin.setRenderMode(RenderMode.COMPASS);
     }
 
     private void setCamPos(Location location) {
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 16.0));
+        locationLayerPlugin.setCameraMode(CameraMode.TRACKING_COMPASS);
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 19.0));
     }
 
     @SuppressLint("MissingPermission")
@@ -156,6 +178,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
