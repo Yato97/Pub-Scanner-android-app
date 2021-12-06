@@ -1,4 +1,11 @@
 <resources>
     <string name="app_name">MobileM1</string>
-    <string name="access_token">pk.eyJ1IjoieWF0bzk3IiwiYSI6ImNrd29xcDcyeTA1ZnYyb2wwcTE5NzRnOGgifQ.bfqBWT2RsR0Ba3K4OqDlCg</string>
+    <string name="access_token" translatable="false">pk.eyJ1IjoieWF0bzk3IiwiYSI6ImNrd29xcDcyeTA1ZnYyb2wwcTE5NzRnOGgifQ.bfqBWT2RsR0Ba3K4OqDlCg</string>
+    <string name="titleform">Ajout d\'une promotion</string>
+    <string name="titlepromo">Nom de la boutique</string>
+    <string name="titleduration">Durée de l\'offre </string>
+    <string name="titlephoto">Photographie</string>
+    <string name="titleoffre">Nature de l\'offre</string>
+    <string name="titlesubmit">Envoyer</string>
+
 </resources>

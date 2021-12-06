@@ -12,7 +12,17 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         mapbox:mapbox_cameraZoom="19.0"
+        mapbox:mapbox_cameraTilt="60.0"
         >
+
+
+        <ImageButton
+            android:id="@+id/switch1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            mapbox:srcCompat="@android:drawable/ic_menu_send"
+            android:background="@android:color/transparent"/>
     </com.mapbox.mapboxsdk.maps.MapView>
 
     <LinearLayout
@@ -70,7 +80,7 @@
             android:layout_marginTop="10dp"
             android:layout_marginBottom="15dp"
             android:gravity="center_horizontal"
-            android:text="FORMULAIRE "
+            android:text="@string/titleform"
             android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
         <LinearLayout
@@ -83,7 +93,7 @@
                 android:id="@+id/textView8"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Titre de la promotion"
+                android:text="@string/titlepromo"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
             <EditText
@@ -105,7 +115,7 @@
                 android:id="@+id/textView7"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Offre"
+                android:text="@string/titleoffre"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
             <EditText
@@ -126,7 +136,7 @@
                 android:id="@+id/textView6"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Durée"
+                android:text="@string/titleduration"
                 android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
             <EditText
@@ -143,7 +153,7 @@
             android:layout_height="60dp"
             android:layout_gravity="center"
             android:layout_margin="5dp"
-            android:text="Photographie" />
+            android:text="@string/titlephoto" />
 
         <Button
             android:id="@+id/submit"
@@ -151,7 +161,7 @@
             android:layout_height="60dp"
             android:layout_gravity="center"
             android:layout_margin="5dp"
-            android:text="Soumettre" />
+            android:text="@string/titlesubmit" />
 
     </LinearLayout>
 

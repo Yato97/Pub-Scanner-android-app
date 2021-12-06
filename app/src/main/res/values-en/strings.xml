@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MobileM1</string>
+    <string name="titlepromo">Shop name</string>
+    <string name="titleoffre">Nature of the offer</string>
+    <string name="titleduration">Duration of the offer</string>
+    <string name="titlephoto">Photography</string>
+    <string name="titlesubmit">Submit</string>
+    <string name="titleform">Adding a promotion</string>
+</resources>
