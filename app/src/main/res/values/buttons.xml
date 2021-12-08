@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="icons">
+        <item>@drawable/ic_baseline_navigation_24</item>
+        <item>@drawable/ic_baseline_add_circle_outline_24</item>
+        <item>@drawable/ic_baseline_my_location_24</item>
+    </array>
+
+    <array name="color">
+        <item>#F262D6F3</item>
+        <item>#F2B07EDD</item>
+        <item>#F256A859</item>
+    </array>
+</resources>

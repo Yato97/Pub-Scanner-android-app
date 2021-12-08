@@ -1,16 +1,41 @@
 package com.yato.mobilem1;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.Service;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.provider.MediaStore;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineListener;
 import com.mapbox.android.core.location.LocationEnginePriority;
@@ -27,15 +52,19 @@ import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
+import com.ramotion.circlemenu.CircleMenuView;
+
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnDoubleTapListener;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener, OnGestureListener, OnDoubleTapListener {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener, OnGestureListener, OnDoubleTapListener, SensorEventListener {
     private MapView mapView;
     private MapboxMap map;
     private PermissionsManager permissionsManager;
@@ -44,8 +73,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LocationEngine locationEngineProvider;
     private Location pos;
 
-    private ImageButton navButton;
-    private ImageButton formButton;
+    private ProgressBar progressBar;
 
     private LinearLayout popUp;
     private Button submit;
@@ -53,11 +81,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private EditText promoC;
     private EditText offreC;
     private EditText timeC;
-    private ImageButton switch1;
     private Boolean click = false;
     private GestureDetector gestureDetector;
 
     private ArrayList<Marker> myMarkers = new ArrayList<Marker>();
+
+    private Sensor mAccelerometer;
+    private SensorManager manager;
+    private boolean accelSupported;
+
+    private CircleMenuView circleMenuView;
+    private CardView cardV;
+
+    private ImageView imageView;
+    private LinearLayout scan;
+    private Bitmap bitmap;
+    private boolean isRuning = false;
+
+    private double ax,ay;
 
 
     @SuppressLint("ClickableViewAccessibility")
@@ -68,60 +109,114 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
 
         mapView = (MapView) findViewById(R.id.mapView);
-        navButton = findViewById(R.id.nav);
-        formButton = findViewById(R.id.openForm);
         popUp = findViewById(R.id.popUp);
         submit = findViewById(R.id.submit);
         photo = findViewById(R.id.photo);
         promoC = findViewById(R.id.promoC);
         offreC = findViewById(R.id.offreC);
         timeC = findViewById(R.id.timeC);
-        switch1 = findViewById(R.id.switch1);
-
-        switch1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!click) {
-                    locationLayerPlugin.setCameraMode(CameraMode.TRACKING_COMPASS);
-                }
-            }
-        });
-
-        navButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!click) {
-                    displayPos();
-                }
-                else {
-                    removePos();
-                }
-            }
-        });
-
-
-        formButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                popUp.setVisibility(View.VISIBLE);
-            }
-        });
+        progressBar = findViewById(R.id.progressBar);
+        circleMenuView = findViewById(R.id.circleMenu);
+        imageView = (ImageView)findViewById(R.id.imageCapt);
+        cardV = findViewById(R.id.cardV);
+        scan = findViewById(R.id.scan);
 
         submit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!(promoC.getText().toString().equals("") && offreC.getText().toString().equals("") && timeC.getText().toString().equals(""))) {
-                    myMarkers.add(new Marker(promoC.getText().toString(), offreC.getText().toString(), Integer.parseInt(timeC.getText().toString()),pos,map));
+                    myMarkers.add(new Marker(promoC.getText().toString(), offreC.getText().toString(), Integer.parseInt(timeC.getText().toString()),pos,map,bitmap));
                     promoC.setText("");
                     offreC.setText("");
                     timeC.setText("");
+                    imageView.setImageBitmap(null);
+                    bitmap = null;
                     popUp.setVisibility(View.INVISIBLE);
+                    cardV.setVisibility(View.INVISIBLE);
                 }
             }
         });
 
+        popUp.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return gestureDetector.onTouchEvent(event);
+            }
+        });
+
+        circleMenuView.setEventListener(new CircleMenuView.EventListener() {
+            @Override
+            public void onMenuOpenAnimationStart(@NonNull CircleMenuView view) {
+                super.onMenuOpenAnimationStart(view);
+            }
+
+            @Override
+            public void onMenuOpenAnimationEnd(@NonNull CircleMenuView view) {
+                super.onMenuOpenAnimationEnd(view);
+            }
+
+            @Override
+            public void onMenuCloseAnimationStart(@NonNull CircleMenuView view) {
+                super.onMenuCloseAnimationStart(view);
+            }
+
+            @Override
+            public void onMenuCloseAnimationEnd(@NonNull CircleMenuView view) {
+                super.onMenuCloseAnimationEnd(view);
+            }
+
+            @Override
+            public void onButtonClickAnimationStart(@NonNull CircleMenuView view, int buttonIndex) {
+                super.onButtonClickAnimationStart(view, buttonIndex);
+            }
+
+            @Override
+            public void onButtonClickAnimationEnd(@NonNull CircleMenuView view, int buttonIndex) {
+                super.onButtonClickAnimationEnd(view, buttonIndex);
+                switch (buttonIndex) {
+                    case 0:
+                        if (!click) {
+                            locationLayerPlugin.setCameraMode(CameraMode.TRACKING_COMPASS);
+                        }
+                        break;
+
+                    case 1:
+                        popUp.setVisibility(View.VISIBLE);
+                        cardV.setVisibility(View.VISIBLE);
+                        break;
+
+                    case 2:
+                        if (!click) {
+                            displayPos();
+                        }
+                        else {
+                            removePos();
+                        }
+                        break;
+                }
+            }
+
+            @Override
+            public boolean onButtonLongClick(@NonNull CircleMenuView view, int buttonIndex) {
+                return super.onButtonLongClick(view, buttonIndex);
+            }
+
+            @Override
+            public void onButtonLongClickAnimationStart(@NonNull CircleMenuView view, int buttonIndex) {
+                super.onButtonLongClickAnimationStart(view, buttonIndex);
+            }
+
+            @Override
+            public void onButtonLongClickAnimationEnd(@NonNull CircleMenuView view, int buttonIndex) {
+                super.onButtonLongClickAnimationEnd(view, buttonIndex);
+            }
+        });
+
         gestureDetector = new GestureDetector(this, this);
-        gestureDetector.setOnDoubleTapListener(this);
+
+
+        manager = (SensorManager) getSystemService(Service.SENSOR_SERVICE);
+        mAccelerometer = manager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
         mapView.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -129,9 +224,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 return gestureDetector.onTouchEvent(event);
             }
         });
+
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[] {
+                    Manifest.permission.CAMERA
+            }, 100);
+        }
+        photo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivityForResult(intent, 100);
+            }
+        });
+
+
         mapView.setStyleUrl("mapbox://styles/yato97/ckwoy24741k0y15r0e1t9jdfq");
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        bitmap = (Bitmap) data.getExtras().get("data");
+        imageView.setImageBitmap(bitmap);
+
     }
 
     @Override
@@ -139,25 +257,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map = mapboxMap;
         enableLocation();
 
-        LatLng pos1 = new LatLng(-20.910938644003053, 55.477425444743005);
-        Location log1 = new Location("pos1");
-        log1.setLatitude(pos1.getLatitude());
-        log1.setLongitude(pos1.getLongitude());
-        LatLng pos2 = new LatLng(-20.91141389499001, 55.47683988498744);
-        Location log2 = new Location("pos2");
-        log2.setLatitude(pos2.getLatitude());
-        log2.setLongitude(pos2.getLongitude());
-        LatLng pos3 = new LatLng(-20.911478422444137, 55.47752374351245);
-        Location log3 = new Location("pos3");
-        log3.setLatitude(pos3.getLatitude());
-        log3.setLongitude(pos3.getLongitude());
+        map.setInfoWindowAdapter(new MapboxMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(@NonNull com.mapbox.mapboxsdk.annotations.Marker marker) {
 
+                View v = getLayoutInflater().inflate(R.layout.customdisplay, null);
 
+                TextView titre = (TextView) v.findViewById(R.id.title);
+                TextView snippset = (TextView) v.findViewById(R.id.snippet);
+                ImageView imgDisplay = (ImageView) v.findViewById(R.id.imageDisplay);
+                for (int i = 0; i < myMarkers.size(); i++) {
+                    if (myMarkers.get(i).getOptions().getSnippet() == marker.getSnippet() && myMarkers.get(i).getOptions().getTitle() == marker.getTitle()) {
+                        imgDisplay.setImageBitmap(myMarkers.get(i).getImg());
+                        System.out.println("ATTENTION =========");
+                    }
+                }
 
+                titre.setText(marker.getTitle());
+                snippset.setText(marker.getSnippet());
 
-        myMarkers.add(new Marker("AmericanDream", "Tee-shirt gun&roses -20%", 2, log1, map));
-        myMarkers.add(new Marker("AdventureLand", "Casquette camel -3%", 4, log2, map));
-        myMarkers.add(new Marker("Zara", "Pantalons guccy -5%", 1, log3, map));
+                v.setPadding(0, 0, 0, 30);
+                return v;
+            }
+        });
     }
 
 
@@ -295,12 +417,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (locationLayerPlugin != null) {
             locationLayerPlugin.onStop();
         }
+        manager.unregisterListener(this, mAccelerometer);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mapView.onResume();
+        accelSupported = manager.registerListener(
+                this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
     }
 
     @Override
@@ -337,12 +462,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public boolean onDoubleTap(MotionEvent e) {
-
-        for (int i = 0; i < myMarkers.size(); i++) {
-            if ((distFrom(pos.getLatitude(), pos.getLongitude(), myMarkers.get(i).location.getLatitude(), myMarkers.get(i).location.getLongitude()) < 0.043)) {
-                myMarkers.get(i).addMarker(map,myMarkers.get(i).getOptions());
-            }
-        }
+        popUp.setVisibility(View.INVISIBLE);
+        cardV.setVisibility(View.INVISIBLE);
         return false;
     }
 
@@ -373,11 +494,102 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onLongPress(MotionEvent e) {
+        ValueAnimator animH = ValueAnimator.ofInt(scan.getMeasuredHeight(), +700);
+        ValueAnimator animW = ValueAnimator.ofInt(scan.getMeasuredWidth(), +700);
+        ValueAnimator animHEnd = ValueAnimator.ofInt(scan.getMeasuredHeight(), 0);
+        ValueAnimator animWEnd = ValueAnimator.ofInt(scan.getMeasuredWidth(), 0);
+        animH.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                int valH = (Integer) valueAnimator.getAnimatedValue();
+                ViewGroup.LayoutParams layoutParams = scan.getLayoutParams();
+                layoutParams.height = valH;
+                scan.setLayoutParams(layoutParams);
+                if (scan.getHeight() < 699) {
+                    isRuning = true;
+                }
+                else {
+                    isRuning = false;
+                    showMarker();
+                }
+                System.out.println(scan.getHeight()+"Bool = "+ isRuning);
+            }
+        });
+        animW.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                int valW = (Integer) valueAnimator.getAnimatedValue();
+                ViewGroup.LayoutParams layoutParams = scan.getLayoutParams();
+                layoutParams.width = valW;
+                scan.setLayoutParams(layoutParams);
+
+            }
+
+        });
+        animHEnd.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                int valW = (Integer) valueAnimator.getAnimatedValue();
+                ViewGroup.LayoutParams layoutParams = scan.getLayoutParams();
+                layoutParams.height = valW;
+                scan.setLayoutParams(layoutParams);
+            }
+
+        });
+        animWEnd.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                int valW = (Integer) valueAnimator.getAnimatedValue();
+                ViewGroup.LayoutParams layoutParams = scan.getLayoutParams();
+                layoutParams.width = valW;
+                scan.setLayoutParams(layoutParams);
+            }
+
+        });
+        if (!click) {
+            animH.setDuration(1000);
+            animH.start();
+            animW.setDuration(1000);
+            animW.start();
+
+            animHEnd.setStartDelay(1000);
+            animWEnd.setStartDelay(1000);
+            animHEnd.start();
+            animWEnd.start();
+            ViewGroup.LayoutParams layoutParams = scan.getLayoutParams();
+
+        }
 
     }
 
+    private void showMarker() {
+        if (!isRuning) {
+            for (int i = 0; i < myMarkers.size(); i++) {
+                if ((distFrom(pos.getLatitude(), pos.getLongitude(), myMarkers.get(i).location.getLatitude(), myMarkers.get(i).location.getLongitude()) < 0.043)) {
+                    myMarkers.get(i).addMarker(map,myMarkers.get(i).getOptions());
+                }
+            }
+        }
+    }
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         return false;
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType()==Sensor.TYPE_LINEAR_ACCELERATION) {
+            ax=event.values[0];
+            ay=event.values[1];
+            int e = (int)((ax*ay)/2);
+            progressBar.setMax(50);
+
+            progressBar.setProgress(e, true);
+
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
 }
