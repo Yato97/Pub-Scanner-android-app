@@ -181,6 +181,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         break;
 
                     case 1:
+                        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(MainActivity.this, new String[] {
+                                    Manifest.permission.CAMERA
+                            }, 100);
+                        }
                         popUp.setVisibility(View.VISIBLE);
                         cardV.setVisibility(View.VISIBLE);
                         break;
@@ -225,11 +230,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[] {
-                    Manifest.permission.CAMERA
-            }, 100);
-        }
         photo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
