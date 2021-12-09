@@ -10,6 +10,9 @@ Les utilisateurs pourront faire la chasse aux bonnes affaires tout en explorant 
   <img src="c.png" width="400" height="300">
 </div>
 
+# Installation sur android
+Se rendre dans le TAG : PubScanner APK -> Télécharger le ficher APK -> Installer sur le téléphone 
+
 # Utilisation
 Scan : long click sur l'écran.
 
