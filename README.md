@@ -15,4 +15,6 @@ Scan : long click sur l'écran.
 
 Fermeture du formulaire : double click.
 
+Permissions : autoriser la localisation et l'utilisation de l'appareil photo
+
 
